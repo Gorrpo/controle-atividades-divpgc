@@ -45,11 +45,15 @@ function validarDados() {
   }
 }
 
-function doGet() {
-  return HtmlService.createHtmlOutput(
-    '<h2>DIVPGC — Controle de Atividades</h2>' +
-    '<p>Este script é vinculado a uma planilha Google Sheets e não possui interface web.</p>'
-  );
+function doGet(e) {
+  return HtmlService.createTemplateFromFile('index')
+    .evaluate()
+    .setTitle('DIVPGC — Controle de Atividades')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 function instalarTriggerDiario() {
