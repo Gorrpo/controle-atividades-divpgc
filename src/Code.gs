@@ -43,6 +43,13 @@ function validarDados() {
   }
 }
 
+function doGet() {
+  return HtmlService.createHtmlOutput(
+    '<h2>DIVPGC — Controle de Atividades</h2>' +
+    '<p>Este script é vinculado a uma planilha Google Sheets e não possui interface web.</p>'
+  );
+}
+
 function instalarTriggerDiario() {
   var triggers = ScriptApp.getProjectTriggers();
   for (var i = 0; i < triggers.length; i++) {
