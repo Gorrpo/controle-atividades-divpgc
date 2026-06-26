@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DIVPGC — Controle de Atividades 2026</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+
+    header {
+      background: #1a73e8; color: #fff; padding: 14px 24px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    .btn-novo {
+      background: #fff; color: #1a73e8; border: none; border-radius: 6px;
+      padding: 8px 16px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    }
+
+    .container { max-width: 1400px; margin: 20px auto; padding: 0 16px; }
+
+    .cards { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+    .card {
+      flex: 1; min-width: 120px; background: #fff; border-radius: 10px;
+      padding: 14px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    .card .num { font-size: 1.8rem; font-weight: 700; }
+    .card .lbl { font-size: 0.72rem; color: #666; margin-top: 3px; }
+    .c-total  .num { color: #1a73e8; }
+    .c-desenv .num { color: #2196f3; }
+    .c-iniciar .num { color: #f59e0b; }
+    .c-conc   .num { color: #22c55e; }
+    .c-susp   .num { color: #ef4444; }
+
+    .filtros {
+      background: #fff; border-radius: 10px; padding: 14px;
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.1);
+    }
+    .filtros input, .filtros select {
+      border: 1px solid #ddd; border-radius: 6px; padding: 8px 12px;
+      font-size: 0.88rem; flex: 1; min-width: 160px;
+    }
+
+    .tabela-wrap { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.1); overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.83rem; min-width: 900px; }
+    thead th {
+      background: #1a73e8; color: #fff; padding: 11px 10px;
+      text-align: left; font-weight: 600; white-space: nowrap; position: sticky; top: 0;
+    }
+    tbody tr { border-bottom: 1px solid #f0f0f0; }
+    tbody tr:hover { background: #f0f6ff !important; }
+    tbody td { padding: 9px 10px; vertical-align: top; line-height: 1.4; }
+    .td-ativ { max-width: 340px; }
+    .td-proj { max-width: 220px; color: #555; font-size: 0.8rem; }
+    .td-sei  { font-size: 0.78rem; color: #888; white-space: pre-line; }
+
+    .badge {
+      display: inline-block; border-radius: 10px; padding: 3px 9px;
+      font-size: 0.75rem; font-weight: 600; white-space: nowrap;
+    }
+    .s-desenv  { background: #dbeafe; color: #1e40af; }
+    .s-iniciar { background: #fef9c3; color: #854d0e; }
+    .s-conc    { background: #dcfce7; color: #166534; }
+    .s-susp    { background: #fee2e2; color: #991b1b; }
+    .s-outro   { background: #f3f4f6; color: #374151; }
+
+    .acoes button {
+      background: none; border: none; cursor: pointer; font-size: 1rem;
+      padding: 3px 5px; border-radius: 4px;
+    }
+    .acoes button:hover { background: #f0f0f0; }
+
+    /* Modal */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.5); z-index: 100; align-items: center; justify-content: center;
+    }
+    .overlay.ativo { display: flex; }
+    .modal {
+      background: #fff; border-radius: 12px; padding: 26px;
+      width: 100%; max-width: 680px; max-height: 92vh; overflow-y: auto;
+    }
+    .modal h2 { font-size: 1rem; margin-bottom: 18px; color: #1a73e8; }
+    .fg { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .fg label { font-size: 0.8rem; font-weight: 600; color: #555; }
+    .fg input, .fg select, .fg textarea {
+      border: 1px solid #ddd; border-radius: 6px; padding: 9px 11px;
+      font-size: 0.88rem; font-family: inherit;
+    }
+    .fg textarea { resize: vertical; min-height: 80px; }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 6px; }
+    .btn-cancel { background: #f3f4f6; border: none; border-radius: 6px; padding: 9px 18px; cursor: pointer; }
+    .btn-save   { background: #1a73e8; color: #fff; border: none; border-radius: 6px; padding: 9px 18px; cursor: pointer; font-weight: 600; }
+    .btn-save:disabled { opacity: .6; cursor: not-allowed; }
+
+    #loading { text-align: center; padding: 48px; color: #888; }
+    .empty   { text-align: center; padding: 40px; color: #aaa; }
+    .pre     { white-space: pre-wrap; word-break: break-word; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>DIVPGC — Atividades 2026</h1>
+  <button class="btn-novo" onclick="abrirModal()">+ Nova Atividade</button>
+</header>
+
+<div class="container">
+  <div class="cards" id="cards"></div>
+
+  <div class="filtros">
+    <input type="text" id="fBusca" placeholder="Buscar por atividade, projeto ou responsável..." oninput="filtrar()">
+    <select id="fStatus" onchange="filtrar()">
+      <option value="">Todos os status</option>
+      <option>Em desenvolvimento</option>
+      <option>A iniciar a execução</option>
+      <option>Concluído</option>
+      <option>SUSPENSO</option>
+    </select>
+  </div>
+
+  <div class="tabela-wrap">
+    <div id="loading">Carregando atividades...</div>
+    <table id="tabela" style="display:none">
+      <thead>
+        <tr>
+          <th style="width:130px">Status</th>
+          <th>Projeto / Ações / Serviços</th>
+          <th>Atividade</th>
+          <th style="width:160px">Data de realização</th>
+          <th style="width:150px">Responsável</th>
+          <th style="width:130px">Unidades</th>
+          <th style="width:160px">SEI</th>
+          <th style="width:70px"></th>
+        </tr>
+      </thead>
+      <tbody id="corpo"></tbody>
+    </table>
+    <div id="vazio" class="empty" style="display:none">Nenhuma atividade encontrada.</div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h2 id="modalTit">Nova Atividade</h2>
+    <div class="fg">
+      <label>Status *</label>
+      <select id="mStatus">
+        <option>Em desenvolvimento</option>
+        <option>A iniciar a execução</option>
+        <option>Concluído</option>
+        <option>SUSPENSO</option>
+      </select>
+    </div>
+    <div class="fg">
+      <label>Projeto / Ações / Serviços *</label>
+      <input type="text" id="mProjeto" placeholder="Nome do projeto ou ação">
+    </div>
+    <div class="fg">
+      <label>Atividade *</label>
+      <textarea id="mAtividade" rows="4" placeholder="Descreva a atividade"></textarea>
+    </div>
+    <div class="fg">
+      <label>Data de realização</label>
+      <input type="text" id="mData" placeholder="Ex: 01/2026 a 12/2026">
+    </div>
+    <div class="fg">
+      <label>Facilitador / Responsável</label>
+      <input type="text" id="mResponsavel" placeholder="Nome(s) do(s) responsável(is)">
+    </div>
+    <div class="fg">
+      <label>Unidades Responsáveis</label>
+      <input type="text" id="mUnidades" placeholder="Ex: DIVPGC/DIGEP">
+    </div>
+    <div class="fg">
+      <label>SEI</label>
+      <input type="text" id="mSei" placeholder="Número(s) do processo SEI">
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-save" id="btnSave" onclick="salvar()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var TODOS = [];
+  var LINHA_EDICAO = null;
+
+  function badgeClass(s) {
+    var v = (s || '').toLowerCase();
+    if (v.indexOf('desenvolvimento') > -1 || v.indexOf('deenvolvimento') > -1) return 's-desenv';
+    if (v.indexOf('iniciar') > -1) return 's-iniciar';
+    if (v.indexOf('conclu') > -1) return 's-conc';
+    if (v.indexOf('suspenso') > -1) return 's-susp';
+    return 's-outro';
+  }
+
+  function init() {
+    document.getElementById('loading').textContent = 'Carregando atividades...';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('tabela').style.display = 'none';
+    document.getElementById('vazio').style.display  = 'none';
+
+    google.script.run
+      .withSuccessHandler(function(resultado) {
+        if (resultado && resultado.erro) {
+          document.getElementById('loading').textContent = '⚠️ ' + resultado.erro;
+          return;
+        }
+        TODOS = resultado || [];
+        renderizar(TODOS);
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('loading').textContent = '❌ Erro ao carregar: ' + (err.message || err);
+      })
+      .listarAtividades();
+  }
+
+  function renderizar(lista) {
+    document.getElementById('loading').style.display = 'none';
+
+    // Cards
+    var tot = lista.length, desenv = 0, iniciar = 0, conc = 0, susp = 0;
+    lista.forEach(function(a) {
+      var v = (a.status || '').toLowerCase();
+      if (v.indexOf('desenvolvimento') > -1 || v.indexOf('deenvolvimento') > -1) desenv++;
+      else if (v.indexOf('iniciar') > -1) iniciar++;
+      else if (v.indexOf('conclu') > -1) conc++;
+      else if (v.indexOf('suspenso') > -1) susp++;
+    });
+    document.getElementById('cards').innerHTML =
+      card('c-total',  tot,    'Total') +
+      card('c-desenv', desenv, 'Em desenvolvimento') +
+      card('c-iniciar',iniciar,'A iniciar') +
+      card('c-conc',   conc,   'Concluído') +
+      card('c-susp',   susp,   'Suspenso');
+
+    if (!lista.length) {
+      document.getElementById('tabela').style.display = 'none';
+      document.getElementById('vazio').style.display  = 'block';
+      return;
+    }
+    document.getElementById('tabela').style.display = '';
+    document.getElementById('vazio').style.display  = 'none';
+
+    document.getElementById('corpo').innerHTML = lista.map(function(a) {
+      var bc = badgeClass(a.status);
+      return '<tr>' +
+        '<td><span class="badge ' + bc + '">' + esc(a.status) + '</span></td>' +
+        '<td class="td-proj pre">' + esc(a.projeto) + '</td>' +
+        '<td class="td-ativ pre">' + esc(a.atividade) + '</td>' +
+        '<td class="pre">' + esc(a.data) + '</td>' +
+        '<td>' + esc(a.responsavel) + '</td>' +
+        '<td>' + esc(a.unidades) + '</td>' +
+        '<td class="td-sei pre">' + esc(a.sei) + '</td>' +
+        '<td class="acoes">' +
+          '<button title="Editar" onclick="editar(' + a.linha + ')">✏️</button>' +
+          '<button title="Excluir" onclick="excluir(' + a.linha + ')">🗑️</button>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function card(cls, n, lbl) {
+    return '<div class="card ' + cls + '"><div class="num">' + n + '</div><div class="lbl">' + lbl + '</div></div>';
+  }
+
+  function esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function filtrar() {
+    var txt    = document.getElementById('fBusca').value.toLowerCase();
+    var status = document.getElementById('fStatus').value.toLowerCase();
+    var f = TODOS.filter(function(a) {
+      var match = !txt || [a.atividade, a.projeto, a.responsavel].some(function(v) {
+        return (v || '').toLowerCase().indexOf(txt) > -1;
+      });
+      var matchS = !status || (a.status || '').toLowerCase().indexOf(status) > -1;
+      return match && matchS;
+    });
+    renderizar(f);
+  }
+
+  function abrirModal(a, linha) {
+    LINHA_EDICAO = linha || null;
+    document.getElementById('modalTit').textContent = linha ? 'Editar Atividade' : 'Nova Atividade';
+    document.getElementById('mStatus').value      = a ? a.status      : 'Em desenvolvimento';
+    document.getElementById('mProjeto').value     = a ? a.projeto     : '';
+    document.getElementById('mAtividade').value   = a ? a.atividade   : '';
+    document.getElementById('mData').value        = a ? a.data        : '';
+    document.getElementById('mResponsavel').value = a ? a.responsavel : '';
+    document.getElementById('mUnidades').value    = a ? a.unidades    : '';
+    document.getElementById('mSei').value         = a ? a.sei         : '';
+    document.getElementById('overlay').classList.add('ativo');
+  }
+
+  function fecharModal() { document.getElementById('overlay').classList.remove('ativo'); }
+
+  function editar(linha) {
+    var a = TODOS.find(function(x) { return x.linha === linha; });
+    if (a) abrirModal(a, linha);
+  }
+
+  function excluir(linha) {
+    var a = TODOS.find(function(x) { return x.linha === linha; });
+    if (!confirm('Excluir esta atividade?\n\n' + (a ? a.atividade.slice(0,80) : ''))) return;
+    google.script.run.withSuccessHandler(init).excluirAtividade(linha);
+  }
+
+  function salvar() {
+    var proj = document.getElementById('mProjeto').value.trim();
+    var ativ = document.getElementById('mAtividade').value.trim();
+    if (!proj || !ativ) { alert('Projeto e Atividade são obrigatórios.'); return; }
+
+    var btn = document.getElementById('btnSave');
+    btn.disabled = true; btn.textContent = 'Salvando...';
+
+    google.script.run
+      .withSuccessHandler(function(r) {
+        btn.disabled = false; btn.textContent = 'Salvar';
+        if (r.ok) { fecharModal(); init(); }
+        else alert('Erro: ' + r.msg);
+      })
+      .salvarAtividade({
+        linhaEdicao:  LINHA_EDICAO,
+        status:       document.getElementById('mStatus').value,
+        projeto:      proj,
+        atividade:    ativ,
+        data:         document.getElementById('mData').value.trim(),
+        responsavel:  document.getElementById('mResponsavel').value.trim(),
+        unidades:     document.getElementById('mUnidades').value.trim(),
+        sei:          document.getElementById('mSei').value.trim()
+      });
+  }
+
+  document.getElementById('overlay').addEventListener('click', function(e) {
+    if (e.target === this) fecharModal();
+  });
+
+  init();
+</script>
+</body>
+</html>
