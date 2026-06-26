@@ -7,6 +7,8 @@ function onOpen() {
     .addItem('Gerar Relatório Mensal', 'gerarRelatorioMensal')
     .addSeparator()
     .addItem('Validar Dados', 'validarDados')
+    .addSeparator()
+    .addItem('⚙ Configurar Planilha (1ª vez)', 'configurarPlanilha')
     .addItem('Instalar Trigger Diário', 'instalarTriggerDiario')
     .addToUi();
 }
