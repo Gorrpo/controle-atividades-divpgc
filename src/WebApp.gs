@@ -1,7 +1,7 @@
 function listarAtividades() {
-  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+  var ss  = getSpreadsheet();
   var aba = ss.getSheetByName(ABA_ATIVIDADES);
-  if (!aba) return [];
+  if (!aba) return { erro: 'Aba "' + ABA_ATIVIDADES + '" não encontrada. Execute DIVPGC → Configurar Planilha primeiro.' };
 
   var dados = aba.getDataRange().getValues();
   var resultado = [];
@@ -11,13 +11,13 @@ function listarAtividades() {
     if (!l[COL.ATIVIDADE] && !l[COL.PROJETO]) continue;
     resultado.push({
       linha:       i + 1,
-      status:      l[COL.STATUS],
-      projeto:     l[COL.PROJETO],
-      atividade:   l[COL.ATIVIDADE],
-      data:        l[COL.DATA],
-      responsavel: l[COL.RESPONSAVEL],
-      unidades:    l[COL.UNIDADES],
-      sei:         l[COL.SEI]
+      status:      String(l[COL.STATUS]      || ''),
+      projeto:     String(l[COL.PROJETO]     || ''),
+      atividade:   String(l[COL.ATIVIDADE]   || ''),
+      data:        String(l[COL.DATA]        || ''),
+      responsavel: String(l[COL.RESPONSAVEL] || ''),
+      unidades:    String(l[COL.UNIDADES]    || ''),
+      sei:         String(l[COL.SEI]         || '')
     });
   }
 
@@ -25,27 +25,22 @@ function listarAtividades() {
 }
 
 function salvarAtividade(dados) {
-  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+  var ss  = getSpreadsheet();
   var aba = ss.getSheetByName(ABA_ATIVIDADES);
   if (!aba) return { ok: false, msg: 'Aba não encontrada.' };
 
   var linha = [
-    dados.status,
-    dados.projeto,
-    dados.atividade,
-    dados.data,
-    dados.responsavel,
-    dados.unidades,
-    dados.sei
+    dados.status, dados.projeto, dados.atividade,
+    dados.data, dados.responsavel, dados.unidades, dados.sei
   ];
 
   if (dados.linhaEdicao) {
-    aba.getRange(dados.linhaEdicao, 1, 1, 7).setValues([linha]);
-    aba.getRange(dados.linhaEdicao, 1, 1, 7).setWrap(true).setVerticalAlignment('top');
+    aba.getRange(dados.linhaEdicao, 1, 1, 7).setValues([linha])
+       .setWrap(true).setVerticalAlignment('top');
   } else {
     aba.appendRow(linha);
     var ultima = aba.getLastRow();
-    aba.getRange(ultima, 1, 1, 7).setWrap(true).setVerticalAlignment('top').setRowHeight ? null : null;
+    aba.getRange(ultima, 1, 1, 7).setWrap(true).setVerticalAlignment('top');
     aba.setRowHeight(ultima, 80);
     if (ultima % 2 === 0) aba.getRange(ultima, 1, 1, 7).setBackground('#f8f9fa');
   }
@@ -54,7 +49,7 @@ function salvarAtividade(dados) {
 }
 
 function excluirAtividade(numeroLinha) {
-  var ss  = SpreadsheetApp.getActiveSpreadsheet();
+  var ss  = getSpreadsheet();
   var aba = ss.getSheetByName(ABA_ATIVIDADES);
   if (!aba) return { ok: false };
   aba.deleteRow(numeroLinha);

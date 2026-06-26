@@ -200,10 +200,22 @@
   }
 
   function init() {
+    document.getElementById('loading').textContent = 'Carregando atividades...';
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('tabela').style.display = 'none';
+    document.getElementById('vazio').style.display  = 'none';
+
     google.script.run
-      .withSuccessHandler(function(lista) {
-        TODOS = lista;
-        renderizar(lista);
+      .withSuccessHandler(function(resultado) {
+        if (resultado && resultado.erro) {
+          document.getElementById('loading').textContent = '⚠️ ' + resultado.erro;
+          return;
+        }
+        TODOS = resultado || [];
+        renderizar(TODOS);
+      })
+      .withFailureHandler(function(err) {
+        document.getElementById('loading').textContent = '❌ Erro ao carregar: ' + (err.message || err);
       })
       .listarAtividades();
   }
