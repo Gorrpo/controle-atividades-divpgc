@@ -26,7 +26,7 @@ var EMAIL_DESTINATARIOS = ['leal.leo@gmail.com'];
 
 // ID da planilha — necessário para o Web App (getActiveSpreadsheet não funciona fora do contexto da planilha)
 // Deixe vazio ('') para usar getActiveSpreadsheet (funciona quando executado de dentro do Sheets)
-var SPREADSHEET_ID = '';
+var SPREADSHEET_ID = '1nnTRh2ZoOZHmCaAT3IXaiUJrveTuLc_t72MCN9-hjmA';
 
 function getSpreadsheet() {
   return SPREADSHEET_ID
