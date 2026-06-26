@@ -1,40 +1,25 @@
-// Aba principal de dados
-var ABA_ATIVIDADES = 'Atividades';
+var ABA_ATIVIDADES = 'Atividades 2026';
 var ABA_DASHBOARD  = 'Dashboard';
 
-// Índices de colunas (base 0)
+// Índices de colunas (base 0) — espelham o xlsx original
 var COL = {
-  ID:               0,
-  DATA_ABERTURA:    1,
-  DESCRICAO:        2,
-  TIPO:             3,
-  RESPONSAVEL:      4,
-  SETOR_EXTERNO:    5,
-  STATUS:           6,
-  PRAZO:            7,
-  DATA_CONCLUSAO:   8,
-  OBSERVACOES:      9
+  STATUS:       0,
+  PROJETO:      1,
+  ATIVIDADE:    2,
+  DATA:         3,
+  RESPONSAVEL:  4,
+  UNIDADES:     5,
+  SEI:          6
 };
 
 var STATUS_VALIDOS = [
-  'Não Iniciada',
-  'Em Andamento',
-  'Aguardando',
-  'Concluída',
-  'Arquivada'
+  'Em desenvolvimento',
+  'A iniciar a execução',
+  'Concluído',
+  'SUSPENSO'
 ];
 
-var TIPOS_VALIDOS = [
-  'APCN',
-  'Minter/Dinter',
-  'Resolução',
-  'Edital',
-  'Fluxo Contínuo',
-  'Outro'
-];
-
-// Dias de antecedência para disparar alerta de prazo
+// Dias de antecedência para disparar alerta (coluna Data usada como referência)
 var DIAS_ALERTA = 7;
 
-// E-mails que recebem alertas e relatórios (separados por vírgula se múltiplos)
 var EMAIL_DESTINATARIOS = ['leal.leo@gmail.com'];

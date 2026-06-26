@@ -1,128 +1,80 @@
 function atualizarDashboard() {
   var ss      = SpreadsheetApp.getActiveSpreadsheet();
   var abaAtiv = ss.getSheetByName(ABA_ATIVIDADES);
-  if (!abaAtiv) {
-    SpreadsheetApp.getUi().alert('Aba "' + ABA_ATIVIDADES + '" não encontrada.');
-    return;
-  }
+  if (!abaAtiv) { SpreadsheetApp.getUi().alert('Aba "' + ABA_ATIVIDADES + '" não encontrada.'); return; }
 
   var dados = abaAtiv.getDataRange().getValues();
   var hoje  = new Date();
 
-  // Contadores
-  var porStatus = {};
-  var porTipo   = {};
-  var aguardandoAntigos = [];
-
-  STATUS_VALIDOS.forEach(function(s) { porStatus[s] = 0; });
-  TIPOS_VALIDOS.forEach(function(t)  { porTipo[t]   = 0; });
+  var porStatus = { 'Em desenvolvimento': 0, 'A iniciar a execução': 0, 'Concluído': 0, 'SUSPENSO': 0, 'Outros': 0 };
+  var porProjeto = {};
 
   for (var i = 1; i < dados.length; i++) {
-    var linha  = dados[i];
-    if (!linha[COL.DESCRICAO]) continue; // linha vazia
+    var l = dados[i];
+    if (!l[COL.ATIVIDADE] && !l[COL.PROJETO]) continue;
 
-    var status = linha[COL.STATUS] || 'Não Iniciada';
-    var tipo   = linha[COL.TIPO]   || 'Outro';
+    var s = (l[COL.STATUS] || '').trim();
+    var sl = s.toLowerCase();
+    if (sl.indexOf('desenvolvimento') > -1 || sl.indexOf('deenvolvimento') > -1) porStatus['Em desenvolvimento']++;
+    else if (sl.indexOf('iniciar') > -1) porStatus['A iniciar a execução']++;
+    else if (sl.indexOf('conclu') > -1) porStatus['Concluído']++;
+    else if (sl.indexOf('suspenso') > -1) porStatus['SUSPENSO']++;
+    else porStatus['Outros']++;
 
-    if (porStatus[status] !== undefined) porStatus[status]++;
-    else porStatus['Não Iniciada']++;
-
-    if (porTipo[tipo] !== undefined) porTipo[tipo]++;
-    else porTipo['Outro']++;
-
-    // Atividades "Aguardando" há mais de 30 dias sem conclusão
-    if (status === 'Aguardando') {
-      var dataAbertura = linha[COL.DATA_ABERTURA];
-      if (dataAbertura instanceof Date) {
-        var diasEspera = Math.floor((hoje - dataAbertura) / 86400000);
-        if (diasEspera > 30) {
-          aguardandoAntigos.push({
-            id:          linha[COL.ID],
-            descricao:   linha[COL.DESCRICAO],
-            setor:       linha[COL.SETOR_EXTERNO],
-            diasEspera:  diasEspera
-          });
-        }
-      }
-    }
+    var proj = (l[COL.PROJETO] || 'Sem projeto').substring(0, 50);
+    porProjeto[proj] = (porProjeto[proj] || 0) + 1;
   }
 
-  var total = dados.length - 1; // desconta cabeçalho
+  var total = dados.length - 1;
 
-  // Cria ou limpa aba Dashboard
   var abaDash = ss.getSheetByName(ABA_DASHBOARD);
-  if (!abaDash) {
-    abaDash = ss.insertSheet(ABA_DASHBOARD);
-  } else {
-    abaDash.clearContents();
-    abaDash.clearFormats();
-  }
+  if (!abaDash) abaDash = ss.insertSheet(ABA_DASHBOARD);
+  else { abaDash.clearContents(); abaDash.clearFormats(); }
 
-  var linha = 1;
+  var row = 1;
 
-  // Título
-  abaDash.getRange(linha, 1).setValue('DIVPGC — Dashboard de Atividades');
-  abaDash.getRange(linha, 1).setFontWeight('bold').setFontSize(14);
-  abaDash.getRange(linha, 2).setValue('Atualizado em: ' + Utilities.formatDate(hoje, 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm'));
-  linha += 2;
+  abaDash.getRange(row, 1).setValue('DIVPGC — Dashboard de Atividades 2026')
+    .setFontWeight('bold').setFontSize(14);
+  abaDash.getRange(row, 3).setValue('Atualizado: ' +
+    Utilities.formatDate(hoje, 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm'));
+  row += 2;
 
-  // Bloco: Resumo por Status
-  abaDash.getRange(linha, 1).setValue('Status').setFontWeight('bold');
-  abaDash.getRange(linha, 2).setValue('Qtd').setFontWeight('bold');
-  abaDash.getRange(linha, 3).setValue('%').setFontWeight('bold');
-  linha++;
-
-  STATUS_VALIDOS.forEach(function(s) {
+  // Resumo por status
+  _cabecalho(abaDash, row, ['Status', 'Qtd', '%']); row++;
+  var statusKeys = ['Em desenvolvimento', 'A iniciar a execução', 'Concluído', 'SUSPENSO', 'Outros'];
+  statusKeys.forEach(function(s) {
     var qtd = porStatus[s];
     var pct = total > 0 ? (qtd / total * 100).toFixed(1) + '%' : '0%';
-    abaDash.getRange(linha, 1).setValue(s);
-    abaDash.getRange(linha, 2).setValue(qtd);
-    abaDash.getRange(linha, 3).setValue(pct);
-    if (s === 'Aguardando') {
-      abaDash.getRange(linha, 1, 1, 3).setBackground('#fff2cc');
-    }
-    linha++;
+    abaDash.getRange(row, 1).setValue(s);
+    abaDash.getRange(row, 2).setValue(qtd);
+    abaDash.getRange(row, 3).setValue(pct);
+    var cor = { 'Em desenvolvimento': '#dbeafe', 'A iniciar a execução': '#fef9c3',
+                'Concluído': '#dcfce7', 'SUSPENSO': '#fee2e2' }[s];
+    if (cor) abaDash.getRange(row, 1, 1, 3).setBackground(cor);
+    row++;
+  });
+  abaDash.getRange(row, 1).setValue('TOTAL').setFontWeight('bold');
+  abaDash.getRange(row, 2).setValue(total).setFontWeight('bold');
+  row += 2;
+
+  // Top projetos
+  abaDash.getRange(row, 1).setValue('Projetos com mais atividades').setFontWeight('bold').setFontSize(11);
+  row++;
+  _cabecalho(abaDash, row, ['Projeto', 'Qtd']); row++;
+  var projs = Object.keys(porProjeto).sort(function(a,b){ return porProjeto[b]-porProjeto[a]; }).slice(0, 15);
+  projs.forEach(function(p) {
+    abaDash.getRange(row, 1).setValue(p);
+    abaDash.getRange(row, 2).setValue(porProjeto[p]);
+    row++;
   });
 
-  abaDash.getRange(linha, 1).setValue('TOTAL').setFontWeight('bold');
-  abaDash.getRange(linha, 2).setValue(total).setFontWeight('bold');
-  linha += 2;
-
-  // Bloco: Resumo por Tipo
-  abaDash.getRange(linha, 1).setValue('Tipo').setFontWeight('bold');
-  abaDash.getRange(linha, 2).setValue('Qtd').setFontWeight('bold');
-  linha++;
-
-  TIPOS_VALIDOS.forEach(function(t) {
-    abaDash.getRange(linha, 1).setValue(t);
-    abaDash.getRange(linha, 2).setValue(porTipo[t]);
-    linha++;
-  });
-  linha++;
-
-  // Bloco: Gargalos — Aguardando há mais de 30 dias
-  abaDash.getRange(linha, 1).setValue('Gargalos — Aguardando há mais de 30 dias').setFontWeight('bold').setFontColor('#cc0000');
-  linha++;
-
-  if (aguardandoAntigos.length === 0) {
-    abaDash.getRange(linha, 1).setValue('Nenhum gargalo identificado.');
-    linha++;
-  } else {
-    abaDash.getRange(linha, 1).setValue('ID').setFontWeight('bold');
-    abaDash.getRange(linha, 2).setValue('Descrição').setFontWeight('bold');
-    abaDash.getRange(linha, 3).setValue('Setor Externo').setFontWeight('bold');
-    abaDash.getRange(linha, 4).setValue('Dias Aguardando').setFontWeight('bold');
-    linha++;
-    aguardandoAntigos.forEach(function(a) {
-      abaDash.getRange(linha, 1).setValue(a.id);
-      abaDash.getRange(linha, 2).setValue(a.descricao);
-      abaDash.getRange(linha, 3).setValue(a.setor);
-      abaDash.getRange(linha, 4).setValue(a.diasEspera);
-      abaDash.getRange(linha, 1, 1, 4).setBackground('#fce8e6');
-      linha++;
-    });
-  }
-
-  abaDash.autoResizeColumns(1, 4);
+  abaDash.setColumnWidth(1, 320);
+  abaDash.setColumnWidth(2, 80);
+  abaDash.setColumnWidth(3, 80);
   ss.toast('Dashboard atualizado!', 'DIVPGC', 4);
+}
+
+function _cabecalho(aba, row, cols) {
+  var r = aba.getRange(row, 1, 1, cols.length);
+  r.setValues([cols]).setFontWeight('bold').setBackground('#1a73e8').setFontColor('#fff');
 }
